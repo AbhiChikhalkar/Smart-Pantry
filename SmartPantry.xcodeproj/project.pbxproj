@@ -10,9 +10,22 @@
 		415C57192EE0A0CD00E13B76 /* SmartPantry.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartPantry.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		415C57392EE0A80C00E13B76 /* Exceptions for "SmartPantry" folder in "SmartPantry" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 415C57182EE0A0CD00E13B76 /* SmartPantry */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		415C571B2EE0A0CD00E13B76 /* SmartPantry */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				415C57392EE0A80C00E13B76 /* Exceptions for "SmartPantry" folder in "SmartPantry" target */,
+			);
 			path = SmartPantry;
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,8 @@
 				DEVELOPMENT_TEAM = 834QU4KV2H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SmartPantry/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera used for scanner";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +303,8 @@
 				DEVELOPMENT_TEAM = 834QU4KV2H;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SmartPantry/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera used for scanner";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
