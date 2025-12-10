@@ -10,13 +10,37 @@ class QuantityHelper {
     
     private init() {}
     
-    // Parse "500 g" or "1.5 kg" into Quantity struct
+    // Parse "500 g", "500g", "1.5kg" into Quantity struct
     func parse(_ string: String) -> Quantity? {
-        let parts = string.lowercased().split(separator: " ")
-        guard parts.count >= 2, let value = Double(parts[0]) else { return nil }
+        let trimmed = string.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let unit = String(parts[1])
-        return Quantity(value: value, unit: unit)
+        // Regex to match number (integer or decimal) followed by optional space and unit
+        // Groups: 1 = Value, 2 = Unit
+        let pattern = "^([0-9]+(?:\\.[0-9]+)?)\\s*([a-z]+)$"
+        
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let range = NSRange(location: 0, length: trimmed.utf16.count)
+        
+        if let match = regex.firstMatch(in: trimmed, options: [], range: range) {
+            if let valueRange = Range(match.range(at: 1), in: trimmed),
+               let unitRange = Range(match.range(at: 2), in: trimmed) {
+                
+                let valueStr = String(trimmed[valueRange])
+                let unitStr = String(trimmed[unitRange])
+                
+                if let value = Double(valueStr) {
+                    return Quantity(value: value, unit: unitStr)
+                }
+            }
+        }
+        
+        // Fallback for simple space split (legacy support)
+        let parts = trimmed.split(separator: " ")
+        if parts.count >= 2, let value = Double(parts[0]) {
+            return Quantity(value: value, unit: String(parts[1]))
+        }
+        
+        return nil
     }
     
     // Deduct recipe amount from inventory amount

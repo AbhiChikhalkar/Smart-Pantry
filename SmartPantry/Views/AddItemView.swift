@@ -108,7 +108,25 @@ struct AddItemView: View {
                 if let urlString = product.imageFrontUrl, let url = URL(string: urlString) {
                     self.imageURL = url
                 }
-                // Note: Parsing quantity from API is complex, leaving manual for now
+                
+                if let quantityString = product.quantity {
+                    // Use QuantityHelper to parse "500 g" -> value: 500, unit: g
+                    if let qty = QuantityHelper.shared.parse(quantityString) {
+                        // Remove trailing .0
+                        let value = qty.value
+                        let formattedValue = value.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", value) : String(format: "%.1f", value)
+                        
+                        self.quantityValue = formattedValue
+                        self.quantityUnit = qty.unit
+                    } else {
+                        // Fallback if parsing fails, just put it all in value or try simple split
+                        self.quantityValue = quantityString
+                    }
+                }
+                
+                // Auto-fill Category and Expiry
+                self.category = product.predictedCategory
+                self.expiryDate = product.estimatedExpiryDate
             }
         } catch {
             print("Error fetching product: \(error)")

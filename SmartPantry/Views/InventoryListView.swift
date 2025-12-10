@@ -136,6 +136,7 @@ struct InventoryList: View {
         .alert("Add Item", isPresented: $showingAddOptions) {
             Button("Scan / Camera") {
                 if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                    scannedCode = nil // Reset previous scan
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         showingScanner = true
                     }
@@ -146,6 +147,7 @@ struct InventoryList: View {
                 }
             }
             Button("Manual Entry") {
+                scannedCode = nil // Ensure fresh form
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     showingManualEntry = true
                 }
@@ -163,7 +165,7 @@ struct InventoryList: View {
             ScannerView(scannedCode: $scannedCode)
         }
         .sheet(isPresented: $showingManualEntry) {
-            AddItemView()
+            AddItemView(barcode: scannedCode)
         }
         .sheet(item: $itemToEdit) { item in
             EditItemView(item: item)

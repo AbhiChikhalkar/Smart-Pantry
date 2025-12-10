@@ -51,11 +51,20 @@ class OpenRouterService {
     private init() {}
     
     // Step 1: Generate 3 Options
-    func generateRecipeOptions(ingredients: [String]) async throws -> [RecipeOption] {
+    func generateRecipeOptions(ingredients: [String], priorityIngredients: [String] = [], favoriteRecipes: [String] = []) async throws -> [RecipeOption] {
         let ingredientsList = ingredients.joined(separator: ", ")
-        let prompt = """
-        You are a helpful cooking assistant. Suggest 3 DISTINCT meal ideas using some or all of these ingredients: \(ingredientsList).
-        You can assume basic pantry staples.
+        var prompt = "You are a helpful cooking assistant. Suggest 3 DISTINCT meal ideas using some or all of these ingredients: \(ingredientsList)."
+        
+        if !priorityIngredients.isEmpty {
+            prompt += "\n\nCRITICAL: You MUST prioritize using these expiring ingredients: \(priorityIngredients.joined(separator: ", ")). Try to include them in the suggestions."
+        }
+        
+        if !favoriteRecipes.isEmpty {
+            prompt += "\n\nThe user loves these dishes: \(favoriteRecipes.joined(separator: ", ")). Try to suggest recipes with a similar style or flavor profile if possible."
+        }
+        
+        prompt += """
+        \nYou can assume basic pantry staples.
         
         Return ONLY valid JSON matching this structure, with no other text:
         {
