@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4154002D2EE98221008FDFC4 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4154002C2EE98221008FDFC4 /* StoreKit.framework */; };
 		C67F523494B76275DF547F8B /* Pods_SmartPantry.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E09EB0AD59BC8933FCA70E3B /* Pods_SmartPantry.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		31610C8774313571619D7B0C /* Pods-SmartPantry.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SmartPantry.release.xcconfig"; path = "Target Support Files/Pods-SmartPantry/Pods-SmartPantry.release.xcconfig"; sourceTree = "<group>"; };
+		4154002C2EE98221008FDFC4 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		415C57192EE0A0CD00E13B76 /* SmartPantry.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartPantry.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C33D739CFE92C011E7269309 /* Pods-SmartPantry.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SmartPantry.debug.xcconfig"; path = "Target Support Files/Pods-SmartPantry/Pods-SmartPantry.debug.xcconfig"; sourceTree = "<group>"; };
 		E09EB0AD59BC8933FCA70E3B /* Pods_SmartPantry.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SmartPantry.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -44,6 +46,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C67F523494B76275DF547F8B /* Pods_SmartPantry.framework in Frameworks */,
+				4154002D2EE98221008FDFC4 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +83,7 @@
 		E75549E26349AC1C301E7EE6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4154002C2EE98221008FDFC4 /* StoreKit.framework */,
 				E09EB0AD59BC8933FCA70E3B /* Pods_SmartPantry.framework */,
 			);
 			name = Frameworks;

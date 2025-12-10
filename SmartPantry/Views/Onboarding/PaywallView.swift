@@ -81,6 +81,17 @@ struct PaywallView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .padding(.bottom)
+            
+            // Developer Bypass (Visible for testing)
+            Button("Simulate Purchase (Developer Bypass)") {
+                Task {
+                    // Force state update
+                    subscriptionManager.isSubscribed = true
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.gray)
+            .padding(.bottom, 5)
         }
     }
 }
