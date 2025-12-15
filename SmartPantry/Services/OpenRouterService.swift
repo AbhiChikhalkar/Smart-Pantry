@@ -21,10 +21,15 @@ struct OpenRouterChoice: Codable {
 // Helper struct to parse the JSON inside the text response
 struct GeneratedRecipe: Codable {
     let title: String
+    let description: String
     let ingredients: [String]
     let steps: [String]
     let prepTime: Int
     let difficulty: String
+    let calories: Int
+    let protein: Int
+    let carbs: Int
+    let fat: Int
 }
 
 // Helper struct for Recipe Options
@@ -53,7 +58,7 @@ class OpenRouterService {
     // Step 1: Generate 3 Options
     func generateRecipeOptions(ingredients: [String], priorityIngredients: [String] = [], favoriteRecipes: [String] = []) async throws -> [RecipeOption] {
         let ingredientsList = ingredients.joined(separator: ", ")
-        var prompt = "You are a helpful cooking assistant. Suggest 3 DISTINCT meal ideas using some or all of these ingredients: \(ingredientsList)."
+        var prompt = "You are a helpful cooking assistant. Suggest 3 DISTINCT meal ideas using some or all of these ingredients: \(ingredientsList). You can assume basic pantry staples and they shuold be realistic."
         
         if !priorityIngredients.isEmpty {
             prompt += "\n\nCRITICAL: You MUST prioritize using these expiring ingredients: \(priorityIngredients.joined(separator: ", ")). Try to include them in the suggestions."
@@ -64,7 +69,6 @@ class OpenRouterService {
         }
         
         prompt += """
-        \nYou can assume basic pantry staples.
         
         Return ONLY valid JSON matching this structure, with no other text:
         {
@@ -85,20 +89,27 @@ class OpenRouterService {
     func generateFullRecipe(title: String, ingredients: [String]) async throws -> GeneratedRecipe {
         let ingredientsList = ingredients.joined(separator: ", ")
         let prompt = """
-        Create a full, easy recipe for "\(title)" using these ingredients: \(ingredientsList).
+        Create a full, detailed recipe for "\(title)" using these ingredients: \(ingredientsList).
         
         IMPORTANT:
         1. The recipe must be for **ONE PERSON** (single serving).
         2. List ingredients in this EXACT format: `[Quantity] [Unit] [Ingredient Name]` (e.g., "100 g Pasta", "1 pcs Egg", "200 ml Milk").
         3. Use metric units (g, ml, pcs) where possible.
+        4. Include a short appetizing description.
+        5. Estimate nutrition facts for one serving.
         
         Return ONLY valid JSON matching this structure, with no other text:
         {
             "title": "\(title)",
+            "description": "A delicious and simple dish...",
             "ingredients": ["List of ingredients with quantities"],
             "steps": ["Step 1", "Step 2"],
             "prepTime": 20,
-            "difficulty": "Easy"
+            "difficulty": "Easy",
+            "calories": 500,
+            "protein": 20,
+            "carbs": 40,
+            "fat": 15
         }
         """
         

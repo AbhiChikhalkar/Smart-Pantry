@@ -11,7 +11,7 @@ struct SplashScreen: View {
                 .frame(width: 100, height: 100)
                 .foregroundStyle(.white)
             
-            Text("SmartPantry")
+            Text("StockUpPantry")
                 .font(.largeTitle)
                 .bold()
                 .foregroundStyle(.white)

@@ -22,8 +22,9 @@ struct RecipeListView: View {
     
     var body: some View {
         NavigationStack {
-            List {
-                Section {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Generator Button
                     Button(action: findRecipeOptions) {
                         HStack {
                             Image(systemName: "wand.and.stars")
@@ -56,40 +57,47 @@ struct RecipeListView: View {
                             }
                         }
                         .padding()
-                        .background(Color.accentColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .background(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .cornerRadius(16)
                     }
                     .disabled(isLoading || availableItems.isEmpty)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                }
-                
-                if savedRecipes.isEmpty {
-                    ContentUnavailableView("No Saved Recipes", systemImage: "book.closed", description: Text("Generate recipes to save them here."))
-                } else {
-                    Section("Saved Recipes") {
-                        ForEach(displayRecipes) { recipe in
-                            NavigationLink(destination: RecipeDetailView(recipe: recipe, isNew: false)) {
-                                VStack(alignment: .leading) {
-                                    Text(recipe.title)
-                                        .font(.headline)
-                                    HStack {
-                                        Label("\(recipe.prepTime) min", systemImage: "clock")
-                                        Spacer()
-                                        if recipe.isFavorite {
-                                            Image(systemName: "heart.fill")
-                                                .foregroundStyle(.red)
+                    .padding(.horizontal)
+                    .padding(.top)
+                    
+                    if savedRecipes.isEmpty {
+                        ContentUnavailableView("No Saved Recipes", systemImage: "book.closed", description: Text("Generate recipes to save them here."))
+                            .padding(.top, 40)
+                    } else {
+                        VStack(alignment: .leading) {
+                            Text("Saved Recipes")
+                                .font(.title2)
+                                .bold()
+                                .padding(.horizontal)
+                            
+                            LazyVStack(spacing: 16) {
+                                ForEach(displayRecipes) { recipe in
+                                    NavigationLink(destination: RecipeDetailView(recipe: recipe, isNew: false)) {
+                                        RecipeCard(recipe: recipe)
+                                    }
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(recipe)
+                                            if let index = displayRecipes.firstIndex(of: recipe) {
+                                                displayRecipes.remove(at: index)
+                                            }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
                                         }
                                     }
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
                                 }
                             }
+                            .padding(.horizontal)
                         }
-                        .onDelete(perform: deleteRecipes)
                     }
                 }
+                .padding(.bottom, 60)
             }
+            .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Recipes")
             // Removed Main Shuffle Button as requested
             .onAppear {
@@ -98,10 +106,7 @@ struct RecipeListView: View {
                 }
             }
             .onChange(of: savedRecipes) { oldValue, newValue in
-                // Keep synced if not explicitly shuffled recently, or just blindly sync?
-                // User might have deleted something, so we must sync.
-                // But we want to preserve shuffle if possible?
-                // Simplest: Reset on change to ensure consistency
+                // Sync without losing implicit order if possible, but simplest is full reset
                 displayRecipes = newValue
             }
             .navigationDestination(isPresented: $showingGeneratedRecipe) {
@@ -217,7 +222,12 @@ struct RecipeListView: View {
                     ingredients: result.ingredients,
                     steps: result.steps,
                     prepTime: result.prepTime,
-                    difficulty: result.difficulty
+                    difficulty: result.difficulty,
+                    recipeDescription: result.description,
+                    calories: result.calories,
+                    protein: result.protein,
+                    carbs: result.carbs,
+                    fat: result.fat
                 )
                 
                 await MainActor.run {
@@ -241,20 +251,44 @@ struct RecipeListView: View {
             }
         }
     }
+}
+
+struct RecipeCard: View {
+    let recipe: Recipe
     
-    private func deleteRecipes(offsets: IndexSet) {
-        withAnimation {
-            // Need to map offsets from displayRecipes back to savedRecipes if we want to delete?
-            // BUT savedRecipes is a Query, we can only delete the Model objects.
-            // Since displayRecipes contains the actual Recipe objects, we can delete them.
+    var body: some View {
+        HStack(spacing: 16) {
+            // Placeholder Icon
+            Image(systemName: "frying.pan.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+                .frame(width: 50, height: 50)
+                .background(Color.orange.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             
-            for index in offsets {
-                let recipeToDelete = displayRecipes[index]
-                modelContext.delete(recipeToDelete)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(recipe.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                
+                HStack {
+                    Label("\(recipe.prepTime) m", systemImage: "clock")
+                    Text("•")
+                    Label(recipe.difficulty, systemImage: "chart.bar")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             
-            // Remove from display as well
-            displayRecipes.remove(atOffsets: offsets)
+            Spacer()
+            
+            if recipe.isFavorite {
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.red)
+            }
         }
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
     }
 }

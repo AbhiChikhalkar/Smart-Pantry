@@ -12,11 +12,13 @@ struct InventoryListView: View {
     var body: some View {
         InventoryList(category: category, searchText: searchText)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .background(Color(UIColor.systemGroupedBackground))
     }
 }
 
 struct InventoryList: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var authManager: AuthManager
     @Query private var items: [Item]
     
     @State private var showingAddOptions = false
@@ -46,80 +48,45 @@ struct InventoryList: View {
     }
     
     var body: some View {
-        List {
-            if items.isEmpty {
-                ContentUnavailableView(
-                    "No Items",
-                    systemImage: category == .fridge ? "refrigerator" : "cabinet",
-                    description: Text("Tap + to add items to your \(category.rawValue).")
-                )
-            } else {
-                ForEach(items) { item in
-                    HStack {
-                        if let imageURL = item.imageURL {
-                            AsyncImage(url: imageURL) { image in
-                                image.resizable().scaledToFit()
-                            } placeholder: {
-                                Image(systemName: "photo")
-                            }
-                            .frame(width: 40, height: 40)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                if items.isEmpty {
+                    ContentUnavailableView(
+                        "No Items",
+                        systemImage: category == .fridge ? "refrigerator" : "cabinet",
+                        description: Text("Tap + to add items to your \(category.rawValue).")
+                    )
+                    .padding(.top, 40)
+                } else {
+                    ForEach(items) { item in
+                        ItemCard(item: item) {
+                           itemToEdit = item
                         }
-                        
-                        VStack(alignment: .leading) {
-                            Text(item.name)
-                                .font(.headline)
-                            if let brand = item.brand {
-                                Text(brand)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                withAnimation {
+                                    item.status = .discarded
+                                }
+                            } label: {
+                                Label("Discard", systemImage: "trash")
                             }
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing) {
-                            Text(item.quantity)
-                                .font(.subheadline)
                             
-                            // Expiry Badge
-                            let days = Calendar.current.dateComponents([.day], from: Date(), to: item.expiryDate).day ?? 0
-                            Text(days < 0 ? "Expired" : (days == 0 ? "Today" : "\(days)d left"))
-                                .font(.caption)
-                                .padding(4)
-                                .background(days < 3 ? Color.red.opacity(0.2) : Color.green.opacity(0.2))
-                                .foregroundStyle(days < 3 ? .red : .green)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        itemToEdit = item
-                    }
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            withAnimation {
-                                item.status = .consumed
-                                try? modelContext.save()
+                            Button {
+                                withAnimation {
+                                    item.status = .consumed
+                                }
+                            } label: {
+                                Label("Consumed", systemImage: "fork.knife")
                             }
-                        } label: {
-                            Label("Consumed", systemImage: "fork.knife")
-                        }
-                        .tint(.green)
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            withAnimation {
-                                item.status = .discarded
-                                try? modelContext.save()
-                            }
-                        } label: {
-                            Label("Discard", systemImage: "trash")
                         }
                     }
                 }
             }
+            .padding(.top)
+            .padding(.bottom, 80) // Space for potential floating button or tab bar
         }
+        .background(Color(UIColor.systemGroupedBackground))
         .navigationTitle(category.rawValue)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -128,7 +95,7 @@ struct InventoryList: View {
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
-                        .background(.ultraThinMaterial)
+                        .background(Color.blue)
                         .clipShape(Circle())
                 }
             }
@@ -177,8 +144,69 @@ struct InventoryList: View {
         }
     }
 }
+
+struct ItemCard: View {
+    let item: Item
+    let action: () -> Void
     
-    private func isExpiringSoon(_ date: Date) -> Bool {
-        let days = Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0
-        return days <= 3
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // Image or Icon
+                if let imageURL = item.imageURL {
+                    AsyncImage(url: imageURL) { image in
+                        image.resizable().scaledToFit()
+                    } placeholder: {
+                        Image(systemName: "photo")
+                            .foregroundStyle(.gray)
+                    }
+                    .frame(width: 50, height: 50)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    Image(systemName: "cube.box.fill")
+                        .font(.title)
+                        .foregroundStyle(.blue)
+                        .frame(width: 50, height: 50)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    
+                    if let brand = item.brand {
+                        Text(brand)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Text(item.quantity)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                // Expiry Badge
+                VStack(alignment: .trailing) {
+                    let days = Calendar.current.dateComponents([.day], from: Date(), to: item.expiryDate).day ?? 0
+                    
+                    Text(days < 0 ? "Expired" : (days == 0 ? "Today" : "\(days)d left"))
+                        .font(.caption)
+                        .bold()
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(days < 3 ? Color.red.opacity(0.1) : Color.green.opacity(0.1))
+                        .foregroundStyle(days < 3 ? .red : .green)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding()
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .cornerRadius(16)
+        }
     }
+}

@@ -10,66 +10,74 @@ struct ShoppingListView: View {
     }, sort: \Item.name) private var shoppingListItems: [Item]
     
     // Suggested items (status == .consumed or .discarded)
-    // We limit to recent ones or just show all for now
     @Query(filter: #Predicate<Item> { item in
         item.statusRawValue == "consumed" || item.statusRawValue == "discarded"
     }, sort: \Item.expiryDate, order: .reverse) private var suggestedItems: [Item]
     
     @State private var showingAddSheet = false
     @State private var newItemName = ""
+    @State private var itemToAdd: Item?
+    @State private var showingQuantitySheet = false
+    
+    // Custom Sheet State
+    @State private var quantityValue = "1"
+    @State private var selectedUnit = "pcs"
+    let units = ["pcs", "kg", "g", "L", "ml", "pack", "can"]
     
     var body: some View {
         NavigationStack {
-            List {
-                Section("To Buy") {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // To Buy Section
                     if shoppingListItems.isEmpty {
-                        ContentUnavailableView("List is Empty", systemImage: "cart", description: Text("Add items or check suggestions below."))
+                        ContentUnavailableView("List is Empty", systemImage: "cart", description: Text("Add items to your shopping list."))
+                            .padding(.vertical, 20)
                     } else {
-                        ForEach(shoppingListItems) { item in
-                            HStack {
-                                Button(action: { markAsBought(item) }) {
-                                    Image(systemName: "circle")
-                                        .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("To Buy")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(shoppingListItems) { item in
+                                ShoppingItemCard(item: item, isSuggestion: false) {
+                                    markAsBought(item)
                                 }
-                                Text(item.name)
-                                Spacer()
-                                Text(item.quantity)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .onDelete(perform: deleteShoppingItems)
-                    }
-                }
-                
-                Section("Suggested (Based on History)") {
-                    if suggestedItems.isEmpty {
-                        Text("No history yet. Consume items to see suggestions.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(suggestedItems) { item in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(item.name)
-                                    Text(item.status == .consumed ? "Consumed" : "Discarded")
-                                        .font(.caption)
-                                        .foregroundStyle(item.status == .consumed ? .green : .red)
-                                }
-                                Spacer()
-                                Button(action: { addToShoppingList(item) }) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .foregroundStyle(.blue)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(item)
+                                    } label: {
+                                        Label("Remove", systemImage: "trash")
+                                    }
                                 }
                             }
                         }
-                        .onDelete(perform: deleteSuggestedItems)
+                    }
+                    
+                    // Suggestions Section
+                    if !suggestedItems.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Recently Used")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(suggestedItems) { item in
+                                ShoppingItemCard(item: item, isSuggestion: true) {
+                                    promptForQuantity(item)
+                                }
+                            }
+                        }
                     }
                 }
+                .padding(.vertical)
             }
+            .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Shopping List")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showingAddSheet = true }) {
                         Image(systemName: "plus")
+                            .font(.headline)
+                            .bold()
                     }
                 }
             }
@@ -80,6 +88,64 @@ struct ShoppingListView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             }
+            .sheet(isPresented: $showingQuantitySheet) {
+                VStack(spacing: 24) {
+                    Text("How much needed?")
+                        .font(.headline)
+                        .padding(.top)
+                    
+                    if let item = itemToAdd {
+                        Text(item.name)
+                            .font(.title2)
+                            .bold()
+                    }
+                    
+                    HStack(spacing: 16) {
+                        // Numeric Input
+                        TextField("Qty", text: $quantityValue)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.center)
+                            .frame(width: 100, height: 50)
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+                        
+                        // Unit Picker (Menu Style)
+                        Menu {
+                            ForEach(units, id: \.self) { unit in
+                                Button(unit) {
+                                    selectedUnit = unit
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(selectedUnit)
+                                    .foregroundStyle(.primary)
+                                Image(systemName: "chevron.down")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(width: 100, height: 50)
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+                        }
+                    }
+                    
+                    Button(action: confirmAdd) {
+                        Text("Add to List")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                }
+                .padding()
+                .presentationDetents([.fraction(0.35)]) // Helper sheet typically takes ~35%
+                .presentationDragIndicator(.visible)
+            }
         }
     }
     
@@ -87,15 +153,39 @@ struct ShoppingListView: View {
         withAnimation {
             item.status = .available
             item.addedDate = Date()
-            // Reset expiry to default 1 week from now as a guess, user should edit
             item.expiryDate = Date().addingTimeInterval(86400 * 7)
         }
     }
     
-    private func addToShoppingList(_ item: Item) {
+    private func promptForQuantity(_ item: Item) {
+        itemToAdd = item
+        quantityValue = "1"
+        selectedUnit = "pcs"
+        
+        // Try to parse existing quantity to pre-fill
+        let parts = item.quantity.split(separator: " ")
+        if parts.count >= 2 {
+             if let val = Double(parts[0]) {
+                 quantityValue = parts[0].replacingOccurrences(of: ".0", with: "")
+             } else {
+                 quantityValue = String(parts[0])
+             }
+             selectedUnit = String(parts[1])
+        }
+        
+        showingQuantitySheet = true
+    }
+    
+    private func confirmAdd() {
+        guard let item = itemToAdd else { return }
+        
         withAnimation {
+            item.quantity = "\(quantityValue) \(selectedUnit)"
             item.status = .shoppingList
         }
+        
+        showingQuantitySheet = false
+        itemToAdd = nil
     }
     
     private func addNewItem() {
@@ -104,20 +194,48 @@ struct ShoppingListView: View {
         modelContext.insert(newItem)
         newItemName = ""
     }
+}
+
+struct ShoppingItemCard: View {
+    let item: Item
+    let isSuggestion: Bool
+    let action: () -> Void
     
-    private func deleteShoppingItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(shoppingListItems[index])
+    var body: some View {
+        HStack {
+            Button(action: action) {
+                Image(systemName: isSuggestion ? "plus.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(isSuggestion ? .green : .secondary)
+            }
+            
+            VStack(alignment: .leading) {
+                Text(item.name)
+                    .font(.body)
+                    .strikethrough(isSuggestion)
+                    .foregroundStyle(isSuggestion ? .secondary : .primary)
+                
+                if !item.quantity.isEmpty && item.quantity != "1 pcs" {
+                    Text(item.quantity)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            if isSuggestion {
+                Text(item.status == .consumed ? "Consumed" : "Discarded")
+                    .font(.caption2)
+                    .foregroundStyle(item.status == .consumed ? .green : .red)
+                    .padding(4)
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(4)
             }
         }
-    }
-    
-    private func deleteSuggestedItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(suggestedItems[index])
-            }
-        }
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+        .padding(.horizontal)
     }
 }

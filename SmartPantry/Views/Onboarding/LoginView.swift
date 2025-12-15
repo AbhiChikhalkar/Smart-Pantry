@@ -5,40 +5,71 @@ struct LoginView: View {
     @EnvironmentObject var authManager: AuthManager
     
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
+        ZStack {
+            // White Background
+            Color.white.ignoresSafeArea()
             
-            Image(systemName: "lock.shield.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 100)
-                .foregroundStyle(Color.accentColor)
-            
-            Text("Welcome to SmartPantry")
-                .font(.largeTitle)
-                .bold()
-                .multilineTextAlignment(.center)
-            
-            Text("Sign in to sync your pantry and access premium features.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Spacer()
-            
-            SignInWithAppleButton(
-                onRequest: { request in
-                    request.requestedScopes = [.fullName, .email]
-                },
-                onCompletion: { result in
-                    authManager.handleSignIn(result: result)
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // Logo/Icon Section
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 140, height: 140)
+                        
+                    Image(systemName: "fork.knife.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .foregroundStyle(Color.blue)
                 }
-            )
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
-            .padding()
+                .padding(.bottom, 40)
+                
+                // Welcome Text
+                VStack(spacing: 16) {
+                    Text("StockUpPantry")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                    
+                    Text("Effortless kitchen management.\nOrganize, Track, and Cook.")
+                        .font(.body)
+                        .foregroundStyle(.gray)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 32)
+                }
+                
+                Spacer()
+                
+                // Action Buttons
+                VStack(spacing: 24) {
+                    SignInWithAppleButton(
+                        onRequest: { request in
+                            request.requestedScopes = [.fullName, .email]
+                        },
+                        onCompletion: { result in
+                            authManager.handleSignIn(result: result)
+                        }
+                    )
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 24)
+                    
+                    Text("By signing in, you agree to our Terms and Privacy Policy")
+                        .font(.footnote)
+                        .foregroundStyle(.gray.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                .padding(.bottom, 50)
+            }
         }
-        .padding()
     }
+}
+
+#Preview {
+    LoginView()
+        .environmentObject(AuthManager())
 }
