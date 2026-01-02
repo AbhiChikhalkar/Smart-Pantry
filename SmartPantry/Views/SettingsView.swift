@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var notificationsEnabled = true
+    @State private var showingShareAlert = false
     
     var body: some View {
         Form {
@@ -40,13 +41,7 @@ struct SettingsView: View {
                 }
                 
                 Button(action: {
-                    // Start Share Flow
-                    let text = "Hey! I'm using SmartPantry to track my food. You should try it too!"
-                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                       let rootVC = windowScene.windows.first?.rootViewController {
-                        let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-                        rootVC.present(activityVC, animated: true)
-                    }
+                    showingShareAlert = true
                 }) {
                     HStack {
                         Image(systemName: "person.2.fill")
@@ -57,6 +52,11 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
+                .alert("Coming Soon", isPresented: $showingShareAlert) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("Real-time collaborative sharing will be available in the next update!")
                 }
             } header: {
                 Text("Family & Data")
