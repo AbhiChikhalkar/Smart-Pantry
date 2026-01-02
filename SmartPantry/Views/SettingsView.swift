@@ -29,6 +29,41 @@ struct SettingsView: View {
                 }
             }
             
+            Section {
+                HStack {
+                    Image(systemName: "icloud.fill")
+                        .foregroundStyle(.blue)
+                    Text("iCloud Sync")
+                    Spacer()
+                    Text("On")
+                        .foregroundStyle(.secondary)
+                }
+                
+                Button(action: {
+                    // Start Share Flow
+                    let text = "Hey! I'm using SmartPantry to track my food. You should try it too!"
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let rootVC = windowScene.windows.first?.rootViewController {
+                        let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+                        rootVC.present(activityVC, animated: true)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "person.2.fill")
+                            .foregroundStyle(.purple)
+                        Text("Share Inventory")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Family & Data")
+            } footer: {
+                Text("Invite friends to use the app. (Real-time collaborative sharing requires iCloud acceptance).")
+            }
+            
             Section("Preferences") {
                 Toggle("Notifications", isOn: $notificationsEnabled)
             }

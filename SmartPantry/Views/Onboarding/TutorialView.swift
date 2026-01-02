@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TutorialView: View {
     @Binding var isCompleted: Bool
+    @State private var showingReminderSetup = false
     
     var body: some View {
         TabView {
@@ -21,9 +22,7 @@ struct TutorialView: View {
                     .bold()
                 
                 Button(action: {
-                    withAnimation {
-                        isCompleted = true
-                    }
+                    showingReminderSetup = true
                 }) {
                     Text("Get Started")
                         .font(.headline)
@@ -38,6 +37,9 @@ struct TutorialView: View {
         }
         .tabViewStyle(.page)
         .indexViewStyle(.page(backgroundDisplayMode: .always))
+        .fullScreenCover(isPresented: $showingReminderSetup) {
+            ReminderSetupView(isCompleted: $isCompleted)
+        }
     }
 }
 

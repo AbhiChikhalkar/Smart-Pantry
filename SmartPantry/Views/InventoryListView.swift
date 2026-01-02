@@ -4,23 +4,8 @@ import VisionKit
 
 struct InventoryListView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var searchText = ""
-    
-    let category: Category
-    
-    // Wrapper view to handle search filtering
-    var body: some View {
-        InventoryList(category: category, searchText: searchText)
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-            .background(Color(UIColor.systemGroupedBackground))
-    }
-}
-
-struct InventoryList: View {
-    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authManager: AuthManager
-    @Query private var items: [Item]
-    
+    @State private var searchText = ""
     @State private var showingAddOptions = false
     @State private var showingScanner = false
     @State private var showingManualEntry = false
@@ -28,66 +13,39 @@ struct InventoryList: View {
     @State private var scannedCode: String?
     @State private var itemToEdit: Item?
     
-    let category: Category
-    
-    init(category: Category, searchText: String) {
-        self.category = category
-        
-        let categoryRawValue = category.rawValue
-        let availableStatus = ItemStatus.available.rawValue
-        
-        if searchText.isEmpty {
-            _items = Query(filter: #Predicate<Item> { item in
-                item.categoryRawValue == categoryRawValue && item.statusRawValue == availableStatus
-            }, sort: \Item.expiryDate)
-        } else {
-            _items = Query(filter: #Predicate<Item> { item in
-                item.categoryRawValue == categoryRawValue && item.statusRawValue == availableStatus && item.name.localizedStandardContains(searchText)
-            }, sort: \Item.expiryDate)
-        }
-    }
-    
+    // Wrapper view to handle search filtering and combined list
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                if items.isEmpty {
-                    ContentUnavailableView(
-                        "No Items",
-                        systemImage: category == .fridge ? "refrigerator" : "cabinet",
-                        description: Text("Tap + to add items to your \(category.rawValue).")
-                    )
-                    .padding(.top, 40)
-                } else {
-                    ForEach(items) { item in
-                        ItemCard(item: item) {
-                           itemToEdit = item
-                        }
+            LazyVStack(spacing: 20) {
+                // Fridge Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Fridge")
+                        .font(.title2)
+                        .bold()
                         .padding(.horizontal)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                withAnimation {
-                                    item.status = .discarded
-                                }
-                            } label: {
-                                Label("Discard", systemImage: "trash")
-                            }
-                            
-                            Button {
-                                withAnimation {
-                                    item.status = .consumed
-                                }
-                            } label: {
-                                Label("Consumed", systemImage: "fork.knife")
-                            }
-                        }
-                    }
+                    
+                    InventorySection(category: .fridge, searchText: searchText, itemToEdit: $itemToEdit)
+                }
+                
+                Divider()
+                    .padding(.horizontal)
+                
+                // Pantry Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Pantry")
+                        .font(.title2)
+                        .bold()
+                        .padding(.horizontal)
+                    
+                    InventorySection(category: .pantry, searchText: searchText, itemToEdit: $itemToEdit)
                 }
             }
             .padding(.top)
-            .padding(.bottom, 80) // Space for potential floating button or tab bar
+            .padding(.bottom, 80) // Space for content
         }
         .background(Color(UIColor.systemGroupedBackground))
-        .navigationTitle(category.rawValue)
+        .navigationTitle("Inventory")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: { showingAddOptions = true }) {
@@ -137,11 +95,93 @@ struct InventoryList: View {
         .sheet(item: $itemToEdit) { item in
             EditItemView(item: item)
         }
-        .onChange(of: scannedCode) { oldValue, newValue in
-            if let code = newValue {
+        .onChange(of: scannedCode) { _, newValue in
+            if newValue != nil {
                 showingManualEntry = true
             }
         }
+    }
+}
+
+struct InventorySection: View {
+    @Query private var items: [Item]
+    @Binding var itemToEdit: Item?
+    let category: Category
+    
+    init(category: Category, searchText: String, itemToEdit: Binding<Item?>) {
+        self.category = category
+        self._itemToEdit = itemToEdit
+        
+        let categoryRawValue = category.rawValue
+        let availableStatus = ItemStatus.available.rawValue
+        
+        if searchText.isEmpty {
+            _items = Query(filter: #Predicate<Item> { item in
+                item.categoryRawValue == categoryRawValue && item.statusRawValue == availableStatus
+            }, sort: \Item.expiryDate)
+        } else {
+            _items = Query(filter: #Predicate<Item> { item in
+                item.categoryRawValue == categoryRawValue && item.statusRawValue == availableStatus && item.name.localizedStandardContains(searchText)
+            }, sort: \Item.expiryDate)
+        }
+    }
+    
+    var body: some View {
+        LazyVStack(spacing: 12) {
+            if items.isEmpty {
+                ContentUnavailableView(
+                    "No Items",
+                    systemImage: category == .fridge ? "refrigerator" : "cabinet",
+                    description: Text("Tap + to add.")
+                )
+                .frame(height: 150)
+                .padding(.top, 40)
+            } else {
+                ForEach(items) { item in
+                    ItemCard(item: item) {
+                        itemToEdit = item
+                    }
+                    .padding(.horizontal)
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        Button {
+                            withAnimation {
+                                item.status = .consumed
+                            }
+                        } label: {
+                            Label("Consumed", systemImage: "fork.knife")
+                        }
+                        .tint(.green)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            withAnimation {
+                                item.status = .discarded
+                            }
+                        } label: {
+                            Label("Discard", systemImage: "trash")
+                        }
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            withAnimation {
+                                item.status = .discarded
+                            }
+                        } label: {
+                            Label("Discard", systemImage: "trash")
+                        }
+                        
+                        Button {
+                            withAnimation {
+                                item.status = .consumed
+                            }
+                        } label: {
+                            Label("Consumed", systemImage: "fork.knife")
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.top)
     }
 }
 

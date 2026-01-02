@@ -35,34 +35,32 @@ struct MainTabView: View {
                 .tag(0)
 
             NavigationStack {
-                InventoryListView(category: .fridge)
-                    .navigationTitle("Fridge")
+                InventoryListView()
             }
             .tabItem {
-                Label("Fridge", systemImage: "refrigerator")
+                Label("Inventory", systemImage: "list.bullet.clipboard")
             }
             .tag(1)
-            
-            NavigationStack {
-                InventoryListView(category: .pantry)
-                    .navigationTitle("Pantry")
-            }
-            .tabItem {
-                Label("Pantry", systemImage: "cabinet")
-            }
-            .tag(2)
             
             RecipeListView()
                 .tabItem {
                     Label("Recipes", systemImage: "fork.knife")
                 }
-                .tag(3)
+                .tag(2)
             
             ShoppingListView()
                 .tabItem {
                     Label("Shopping", systemImage: "cart")
                 }
-                .tag(4)
+                .tag(3)
+            
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gear")
+            }
+            .tag(4)
         }
     }
 }

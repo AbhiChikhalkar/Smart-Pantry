@@ -71,4 +71,30 @@ class NotificationManager {
         
         UNUserNotificationCenter.current().add(request)
     }
+    func scheduleDailyCheckIn(at date: Date) {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Did you cook today?"
+        content.body = "Keep your inventory fresh! Tap to update what you used."
+        content.sound = .default
+        
+        // Schedule daily at the user's preferred time
+        var dateComponents = DateComponents()
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "daily_checkin", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling daily check-in: \(error)")
+            } else {
+                print("Daily check-in scheduled for \(hour):\(minute)")
+            }
+        }
+    }
 }

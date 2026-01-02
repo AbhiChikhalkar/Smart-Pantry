@@ -116,33 +116,21 @@ class CameraManager: NSObject {
 
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // We need to access isProcessing, which is a mutable state. 
-        // Since this method is nonisolated, we need to be careful.
-        // However, CameraManager itself seems to be inferred as MainActor in the user's context, 
-        // but we are accessing 'isProcessing' which is a var.
-        // To be safe and avoid data races, we should probably use a lock or dispatch to a serial queue,
-        // OR simply dispatch the whole processing to our sessionQueue or a dedicated processing queue.
         
-        // Let's dispatch to the sessionQueue (or a background queue) to handle the logic, 
-        // assuming 'isProcessing' is not MainActor isolated (it's just a var on the class).
-        // If CameraManager IS MainActor, we can't access 'isProcessing' from nonisolated context without await.
-        
-        // SIMPLER APPROACH:
-        // Let's assume we can dispatch async to the main actor to check/set the flag if it's UI related,
-        // BUT image processing should be background.
-        
-        // Let's try to just ignore the 'isProcessing' flag for a moment or make it thread-safe.
-        // For now, I will just address the compiler error by wrapping the body in Task and MainActor if needed,
-        // OR better, since MLKit processing is async anyway, let's just do the setup here.
+        // FIX: Remove manual 'isProcessing' check to allow MLKit to handle throughput or handle it thread-safely
+        // if needed. For now, trusting MLKit async processing.
         
         let visionImage = VisionImage(buffer: sampleBuffer)
-        visionImage.orientation = imageOrientation(deviceOrientation: UIDevice.current.orientation, cameraPosition: .back)
+        var deviceOrientation: UIDeviceOrientation = .unknown
+        
+        // Sync access to MainActor property
+        DispatchQueue.main.sync {
+            deviceOrientation = UIDevice.current.orientation
+        }
+        visionImage.orientation = imageOrientation(deviceOrientation: deviceOrientation, cameraPosition: .back)
         
         let barcodeOptions = BarcodeScannerOptions(formats: .all)
         let barcodeScanner = BarcodeScanner.barcodeScanner(options: barcodeOptions)
-        
-        // Process on a background queue is default for ML Kit? No, process(image) is synchronous or async?
-        // process(image, completion:) is async.
         
         barcodeScanner.process(visionImage) { [weak self] barcodes, error in
             guard let self = self else { return }

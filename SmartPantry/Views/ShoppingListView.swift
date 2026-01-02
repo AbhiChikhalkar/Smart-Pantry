@@ -165,7 +165,7 @@ struct ShoppingListView: View {
         // Try to parse existing quantity to pre-fill
         let parts = item.quantity.split(separator: " ")
         if parts.count >= 2 {
-             if let val = Double(parts[0]) {
+             if Double(parts[0]) != nil {
                  quantityValue = parts[0].replacingOccurrences(of: ".0", with: "")
              } else {
                  quantityValue = String(parts[0])

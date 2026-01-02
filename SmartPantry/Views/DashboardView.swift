@@ -1,10 +1,18 @@
 import SwiftUI
 import SwiftData
+import VisionKit
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
     @Binding var selectedTab: Int
+    
+    // Add Item Sheets State
+    @State private var showingAddOptions = false
+    @State private var showingScanner = false
+    @State private var showingManualEntry = false
+    @State private var showingScannerError = false
+    @State private var scannedCode: String?
     
     // Greeting based on time of day
     var greeting: String {
@@ -60,7 +68,7 @@ struct DashboardView: View {
                             
                             // 3. Smart Recipes Card
                             Button(action: {
-                                selectedTab = 3 // Recipes Tab
+                                selectedTab = 2 // Recipes Tab
                             }) {
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack {
@@ -130,16 +138,15 @@ struct DashboardView: View {
                             }
                             
                             QuickAccessButton(title: "Pantry", icon: "cabinet", color: .brown) {
-                                selectedTab = 2
+                                selectedTab = 1
                             }
                             
                             QuickAccessButton(title: "Shopping List", icon: "cart", color: .green) {
-                                selectedTab = 4
+                                selectedTab = 3
                             }
                             
                             QuickAccessButton(title: "Add Item", icon: "plus", color: .purple) {
-                                // This would likely trigger the Add Sheet, but basic nav is fine for now
-                                selectedTab = 1 // Go to simplified location
+                                showingAddOptions = true
                             }
                         }
                         .padding(.horizontal)
@@ -151,15 +158,45 @@ struct DashboardView: View {
             .navigationTitle("StockUpPantry")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: SettingsView().environmentObject(AuthManager())) { // Note: Ideally pass existing authManager, but for now this works if AuthManager handles its own state or we pass it down properly.
-                        // Actually, DashboardView is in MainTabView which creates DashboardView.
-                        // ContentView creates AuthManager and passes it as environmentObject.
-                        // So SettingsView will pick it up from Environment if we don't handle it here, BUT NavigationLink destination needs it?
-                        // Actually, EnvironmentObject propagates down NavigationStack.
-                        Image(systemName: "gearshape.fill")
-                            .foregroundStyle(.primary)
+                // Toolbar items can be added here if needed in the future
+            }
+            .alert("Add Item", isPresented: $showingAddOptions) {
+                Button("Scan / Camera") {
+                    if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                        scannedCode = nil // Reset previous scan
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showingScanner = true
+                        }
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showingScannerError = true
+                        }
                     }
+                }
+                Button("Manual Entry") {
+                    scannedCode = nil // Ensure fresh form
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showingManualEntry = true
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Choose how you want to add an item.")
+            }
+            .alert("Scanner Not Available", isPresented: $showingScannerError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("The camera is not available on this device. If you are on the Simulator, please use Manual Entry.")
+            }
+            .sheet(isPresented: $showingScanner) {
+                ScannerView(scannedCode: $scannedCode)
+            }
+            .sheet(isPresented: $showingManualEntry) {
+                AddItemView(barcode: scannedCode)
+            }
+            .onChange(of: scannedCode) { _, newValue in
+                if newValue != nil {
+                    showingManualEntry = true
                 }
             }
         }

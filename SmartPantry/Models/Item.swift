@@ -3,16 +3,19 @@ import SwiftData
 
 @Model
 final class Item {
-    var id: UUID
-    var name: String
-    var quantity: String
-    var categoryRawValue: String
-    var expiryDate: Date
-    var addedDate: Date
+    var id: UUID = UUID()
+    var name: String = ""
+    var quantity: String = "1 pcs"
+    var categoryRawValue: String = Category.fridge.rawValue
+    var expiryDate: Date = Date()
+    var addedDate: Date = Date()
     var barcode: String?
     var imageURL: URL?
     var brand: String?
     var statusRawValue: String = ItemStatus.available.rawValue
+    
+    // Relationship to parent Pantry
+    var pantry: Pantry?
     
     var category: Category {
         get { Category(rawValue: categoryRawValue) ?? .fridge }

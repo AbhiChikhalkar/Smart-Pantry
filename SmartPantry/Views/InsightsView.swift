@@ -82,6 +82,13 @@ struct InsightsView: View {
                 }
                 .padding(.horizontal)
                 
+                // 3.5 New Insights (Storage & Expiry)
+                VStack(spacing: 16) {
+                    ExpiryForecastCard(items: items)
+                    StorageDistributionChart(items: items)
+                }
+                .padding(.horizontal)
+                
                 // 4. Most Consumed List
                 if !mostConsumedItems.isEmpty {
                     VStack(alignment: .leading) {
@@ -300,6 +307,94 @@ struct InsightSummaryCard: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - New Insights Components
+
+struct StorageDistributionChart: View {
+    var items: [Item]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Storage Distribution")
+                .font(.headline)
+            
+            if items.isEmpty {
+                Text("No items to display")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+            } else {
+                Chart {
+                    ForEach(Category.allCases, id: \.self) { category in
+                        let count = items.filter { $0.category == category && $0.status == .available }.count
+                        if count > 0 {
+                            SectorMark(
+                                angle: .value("Count", count),
+                                innerRadius: .ratio(0.6),
+                                angularInset: 2
+                            )
+                            .foregroundStyle(by: .value("Category", category.rawValue))
+                            .annotation(position: .overlay) {
+                                Text("\(count)")
+                                    .font(.caption)
+                                    .foregroundStyle(.white)
+                                    .bold()
+                            }
+                        }
+                    }
+                }
+                .frame(height: 200)
+            }
+        }
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
+    }
+}
+
+struct ExpiryForecastCard: View {
+    var items: [Item]
+    
+    var expiringSoonCount: Int {
+        let calendar = Calendar.current
+        let today = Date()
+        let nextWeek = calendar.date(byAdding: .day, value: 7, to: today) ?? today
+        
+        return items.filter { item in
+            item.status == .available &&
+            item.expiryDate >= today &&
+            item.expiryDate <= nextWeek
+        }.count
+    }
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Expiry Forecast")
+                    .font(.headline)
+                Text("Next 7 Days")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            HStack(spacing: 12) {
+                Text("\(expiringSoonCount)")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(expiringSoonCount > 0 ? .orange : .green)
+                
+                Text(expiringSoonCount == 1 ? "item" : "items")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
         .padding()
         .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(16)
