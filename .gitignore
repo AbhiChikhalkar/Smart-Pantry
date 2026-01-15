@@ -50,3 +50,6 @@ fastlane/test_output
 
 ## Logs
 *.log
+
+## Local Secrets
+SmartPantry/Services/OpenRouterService.swift
