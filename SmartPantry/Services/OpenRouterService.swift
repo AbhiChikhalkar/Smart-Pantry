@@ -51,7 +51,7 @@ class OpenRouterService {
     static let shared = OpenRouterService()
     
     // API Key provided by user
-    private let apiKey = "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"
+    private let apiKey = ""
     
     private init() {}
     
